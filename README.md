@@ -1,4 +1,4 @@
-# Ant Manipulation CLI (antalignment)
+# ant-manipulator
 
 A command-line tool to **align versions and coordinates in [Apache Ant](https://ant.apache.org/)
 projects**, modelled on the [Maven POM Manipulation Extension (PME)](https://github.com/release-engineering/pom-manipulation-ext)
