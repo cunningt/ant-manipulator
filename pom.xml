@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.jboss</groupId>
+    <artifactId>jboss-parent</artifactId>
+    <version>54</version>
+  </parent>
 
   <groupId>org.jboss.pnc.ant-manipulator</groupId>
   <artifactId>ant-manipulator-parent</artifactId>
@@ -25,13 +29,6 @@
     </license>
   </licenses>
 
-  <scm>
-    <connection>scm:git:https://github.com/project-ncl/ant-manipulator.git</connection>
-    <developerConnection>scm:git:git@github.com:project-ncl/ant-manipulator.git</developerConnection>
-    <url>https://github.com/project-ncl/ant-manipulator</url>
-    <tag>HEAD</tag>
-  </scm>
-
   <!-- Module layout mirrors pom-manipulation-ext:
          common          - shared value types, version math (VersionIncrementer), DA translator
          core            - the Ant-tree manipulators (resolve/correlate/reconcile/rewrite) + report
@@ -44,21 +41,30 @@
     <module>integration-test</module>
   </modules>
 
+  <scm>
+    <connection>scm:git:https://github.com/project-ncl/ant-manipulator.git</connection>
+    <developerConnection>scm:git:git@github.com:project-ncl/ant-manipulator.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/project-ncl/ant-manipulator</url>
+  </scm>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- Match pom-manipulation-ext: compile/target Java 8, built with JDK 11+. -->
+    <!-- Match pom-manipulation-ext: compile/target Java 8, built with JDK 17+ (required by spotless 2.44.x). -->
     <javaVersion>1.8</javaVersion>
     <maven.compiler.source>${javaVersion}</maven.compiler.source>
     <maven.compiler.target>${javaVersion}</maven.compiler.target>
     <maven.compiler.release>8</maven.compiler.release>
+
+    <!-- Override enforcer requirements -->
+    <jdk.min.version>17</jdk.min.version>
+
     <picocli.version>4.7.6</picocli.version>
-    <slf4j.version>2.0.13</slf4j.version>
     <ant.version>1.10.18</ant.version>
-    <!-- Unirest 3.x is the Java 8-baseline line PME pins. -->
-    <unirest.version>3.14.5</unirest.version>
     <!-- Test stack, matching pom-manipulation-ext / gradle-manipulator. -->
     <junit.version>5.10.2</junit.version>
     <assertj.version>3.25.3</assertj.version>
+    <logback.version>1.6.5</logback.version>
     <!-- WireMock stubs the DA lookup service in tests. The jre8-standalone (shaded) artifact keeps its
          Jetty/Jackson/HttpClient off our classpath so it can't clash with Unirest's, and its Java 8
          bytecode matches our compile target. Same line gradle-manipulator uses (2.35.x). -->
@@ -94,6 +100,11 @@
 
       <!-- Third-party. -->
       <dependency>
+        <groupId>org.jboss.pnc.maven-manipulator</groupId>
+        <artifactId>pom-manipulation-io</artifactId>
+        <version>5.9</version>
+      </dependency>
+      <dependency>
         <groupId>info.picocli</groupId>
         <artifactId>picocli</artifactId>
         <version>${picocli.version}</version>
@@ -104,24 +115,9 @@
         <version>${ant.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.konghq</groupId>
-        <artifactId>unirest-java</artifactId>
-        <version>${unirest.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.konghq</groupId>
-        <artifactId>unirest-objectmapper-jackson</artifactId>
-        <version>${unirest.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-simple</artifactId>
-        <version>${slf4j.version}</version>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>${logback.version}</version>
       </dependency>
 
       <!-- Test. -->
@@ -161,21 +157,6 @@
     </dependency>
   </dependencies>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <!-- Hosts org.jboss.pnc:ide-config, the shared Spotless config used by pom-manipulation-ext. -->
-      <id>jboss-public</id>
-      <name>JBoss Public Repository Group</name>
-      <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
-
   <build>
     <pluginManagement>
       <plugins>
@@ -188,6 +169,11 @@
           <artifactId>spotless-maven-plugin</artifactId>
           <version>${spotless.version}</version>
           <configuration>
+            <pom>
+              <sortPom>
+                <expandEmptyElements>false</expandEmptyElements>
+              </sortPom>
+            </pom>
             <java>
               <removeUnusedImports/>
               <importOrder>
@@ -209,10 +195,10 @@
           <executions>
             <execution>
               <id>spotless-apply</id>
-              <phase>compile</phase>
               <goals>
                 <goal>apply</goal>
               </goals>
+              <phase>compile</phase>
             </execution>
           </executions>
         </plugin>
