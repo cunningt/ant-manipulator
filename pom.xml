@@ -59,12 +59,15 @@
     <!-- Override enforcer requirements -->
     <jdk.min.version>17</jdk.min.version>
 
+    <pme.version>5.9</pme.version>
     <picocli.version>4.7.6</picocli.version>
     <ant.version>1.10.18</ant.version>
+    <!-- Logging stack, matching pom-manipulation-ext / gradle-manipulator. -->
+    <slf4j.version>2.0.19</slf4j.version>
+    <logback.version>1.6.5</logback.version>
     <!-- Test stack, matching pom-manipulation-ext / gradle-manipulator. -->
     <junit.version>5.10.2</junit.version>
     <assertj.version>3.25.3</assertj.version>
-    <logback.version>1.6.5</logback.version>
     <!-- WireMock stubs the DA lookup service in tests. The jre8-standalone (shaded) artifact keeps its
          Jetty/Jackson/HttpClient off our classpath so it can't clash with Unirest's, and its Java 8
          bytecode matches our compile target. Same line gradle-manipulator uses (2.35.x). -->
@@ -76,7 +79,6 @@
     <ide-config.version>1.1.0</ide-config.version>
     <shade.version>3.6.0</shade.version>
     <failsafe.version>3.2.5</failsafe.version>
-    <mainClass>org.jboss.pnc.antmanipulator.cli.Cli</mainClass>
   </properties>
 
   <dependencyManagement>
@@ -102,7 +104,13 @@
       <dependency>
         <groupId>org.jboss.pnc.maven-manipulator</groupId>
         <artifactId>pom-manipulation-io</artifactId>
-        <version>5.9</version>
+        <version>${pme.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.commonjava.maven.galley</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>info.picocli</groupId>
@@ -113,6 +121,19 @@
         <groupId>org.apache.ant</groupId>
         <artifactId>ant</artifactId>
         <version>${ant.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <!-- JCL-over-SLF4J bridge: required by Apache HttpClient (used by Unirest).
+             Declared explicitly because galley-transport-httpclient was the prior provider;
+             excluding Galley removes it and causes NoClassDefFoundError at runtime. -->
+        <groupId>org.slf4j</groupId>
+        <artifactId>jcl-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
@@ -135,6 +156,9 @@
         <scope>test</scope>
       </dependency>
       <dependency>
+        <!-- WireMock stubs the DA lookup service in tests. The jre8-standalone (shaded) artifact keeps its
+             Jetty/Jackson/HttpClient off our classpath so it can't clash with Unirest's, and its Java 8
+             bytecode matches our compile target. Same line gradle-manipulator uses (2.35.x). -->
         <groupId>com.github.tomakehurst</groupId>
         <artifactId>wiremock-jre8-standalone</artifactId>
         <version>${wiremock.version}</version>
