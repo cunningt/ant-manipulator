@@ -10,7 +10,7 @@
 
   <groupId>org.jboss.pnc.ant-manipulator</groupId>
   <artifactId>ant-manipulator-parent</artifactId>
-  <version>0.1</version>
+  <version>0.2-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Ant Manipulator Parent</name>
@@ -44,7 +44,7 @@
   <scm>
     <connection>scm:git:https://github.com/project-ncl/ant-manipulator.git</connection>
     <developerConnection>scm:git:git@github.com:project-ncl/ant-manipulator.git</developerConnection>
-    <tag>0.1</tag>
+    <tag>HEAD</tag>
     <url>https://github.com/project-ncl/ant-manipulator</url>
   </scm>
 
