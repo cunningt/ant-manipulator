@@ -115,6 +115,15 @@
             <groupId>org.commonjava.maven.galley</groupId>
             <artifactId>*</artifactId>
           </exclusion>
+          <!-- The OTLP exporter (+ okhttp + kotlin-stdlib, ~7MB) is only reachable through OTelCLIHelper's
+               startOTel(), which this tool never calls — we invoke DefaultTranslator directly, never configuring
+               telemetry export. DefaultTranslator only needs the OTel API (Span/SpanContext) and the sdk-trace
+               SpanProcessor type for otelEnabled(), which stay on the classpath. Pruning the exporter subtree
+               keeps the shaded CLI jar from carrying an HTTP exporter and the Kotlin runtime it drags in. -->
+          <exclusion>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
