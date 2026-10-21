@@ -9,29 +9,105 @@ title: "Alignment Report"
 
 ## Overview
 
-After every run, ant-manipulator emits a JSON report that captures everything it discovered about
-the build: every coordinate candidate, how they were grouped into artifacts, which versions are
-concrete and which are tokenised (`${property}` / `@TOKEN@`), and — for tokenised versions — the
-result of following Ant's substitution chains to a concrete value.
+ant-manipulator emits two JSON reports, each with a different job:
 
-This report is the analogue of PME's `alignmentReport.json`. It is written even when `restURL` is
-not set (discovery/report-only mode), making it useful as a diagnostic tool independent of
-alignment.
+| Report | Property | Default path | When written |
+| --- | --- | --- | --- |
+| [PME alignment report](#pme-alignment-report) | `reportJSONOutputFile` | `alignmentReport.json` beside the build file | After alignment, only if something was realigned (or `reportJsonUnchanged=true`) |
+| [Discovery report](#discovery-report) | `discoveryReportJSONOutputFile` | `discovery-report.json` beside the build file | Always, including when `restURL` is not set (discovery/report-only mode) |
 
-## Output Path {#output-path}
+The **PME alignment report** is what PNC/Repour consume: it reuses PME's own JSON POJOs
+(`org.jboss.pnc.mavenmanipulator.common.json`, from `pom-manipulation-common-lite`) so its shape is
+byte-for-byte compatible with PME's and GME's `alignmentReport.json` — a diff of the
+groupId:artifactId:version changes that were actually applied.
+
+The **discovery report** is this tool's own, richer diagnostic output: every coordinate candidate
+found, how they were grouped into artifacts, which versions are concrete vs. tokenised, and the
+result of reconciling tokens. It has no PME/GME equivalent and is independently useful even when
+`restURL` isn't set.
+
+## PME Alignment Report
+
+### Output Path
 
 | Property | Description | Default |
 | --- | --- | --- |
-| `reportJSONOutputFile` | Path of the JSON report file | `alignment-report.json` beside the build file |
-
-By default the file is placed next to the build file passed to `-f`. Override with an absolute or
-relative path:
+| `reportJSONOutputFile` | Path of the PME-shaped JSON report file | `alignmentReport.json` beside the build file |
+| `reportJsonUnchanged` | Write the report even when no artifact was realigned | `false` |
 
 ```bash
--DreportJSONOutputFile=/tmp/my-report.json
+-DreportJSONOutputFile=/tmp/alignmentReport.json
 ```
 
-## JSON Structure
+By default the report is only written when at least one artifact's version was actually realigned
+(mirroring PME: there's nothing useful to report otherwise). Set `-DreportJsonUnchanged=true` to force
+it to be written regardless.
+
+### JSON Structure
+
+The report has two top-level keys, exactly as PME defines them:
+
+| Key | Type | Description |
+| --- | --- | --- |
+| `executionRoot` | object | GAV of the artifact treated as "the" project root — see [Choosing executionRoot](#choosing-executionroot) |
+| `modules` | array | One entry per artifact whose version was realigned |
+
+Each `executionRoot` / `modules[].gav` object is:
+
+| Field | Description |
+| --- | --- |
+| `groupId` | Maven group ID of the realigned (new) coordinate |
+| `artifactId` | Maven artifact ID of the realigned (new) coordinate |
+| `version` | The computed publish version |
+| `originalGAV` | The original `groupId:artifactId:version` before realignment |
+
+Ant Manipulator only realigns a project's own publishing coordinates (not its consumed
+dependencies), so unlike PME's `ModulesItem`, the `properties`/`dependencies`/`managedDependencies`/
+`plugins`/`profiles` fields are always empty and omitted from the output.
+
+### Choosing `executionRoot`
+
+Unlike a Maven reactor, an Ant project has no single canonical root GAV — one `build.xml` can publish
+many artifacts. `executionRoot` is chosen as whichever realigned artifact has a finding sourced
+directly from the root build file (the one passed to `-f`); if none is declared there, the first
+realigned artifact (by `groupId:artifactId` order) is used instead.
+
+### Annotated example
+
+```json
+{
+  "executionRoot": {
+    "groupId": "com.example",
+    "artifactId": "my-lib",
+    "version": "1.2.3.redhat-00001",
+    "originalGAV": "com.example:my-lib:1.2.3"
+  },
+  "modules": [
+    {
+      "gav": {
+        "groupId": "com.example",
+        "artifactId": "my-lib",
+        "version": "1.2.3.redhat-00001",
+        "originalGAV": "com.example:my-lib:1.2.3"
+      }
+    }
+  ]
+}
+```
+
+## Discovery Report
+
+### Output Path
+
+| Property | Description | Default |
+| --- | --- | --- |
+| `discoveryReportJSONOutputFile` | Path of the discovery JSON report file | `discovery-report.json` beside the build file |
+
+```bash
+-DdiscoveryReportJSONOutputFile=/tmp/my-report.json
+```
+
+### JSON Structure
 
 The report has four top-level keys:
 
@@ -145,7 +221,9 @@ values. The result is captured in a reconciliation object:
 
 ## Programmatic Access
 
-The report is produced by `AlignmentReport` and serialised by `AlignmentReportJson` in the `core`
-module (`org.jboss.pnc.antmanipulator.report`). If you need to consume the report programmatically
-rather than parsing the JSON directly, use the `AlignmentReport.build(...)` factory method after
-running the pipeline stages manually.
+The PME-shaped report is produced by `PmeAlignmentReport` in the `core` module, and serialised with
+PME's own `JSONUtils`/`PME` POJOs from `pom-manipulation-common-lite`. The discovery report is
+produced by `AlignmentReport`, also in `org.jboss.pnc.antmanipulator.report`, and serialised with a
+plain Jackson `ObjectMapper`. If you need to consume either report programmatically rather than
+parsing the JSON directly, use the respective `build(...)` factory method after running the pipeline
+stages manually.

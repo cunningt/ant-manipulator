@@ -103,7 +103,8 @@ class GroovyScriptIT {
         int exitCode = new Cli().run(new String[] { "-f", buildFile.getAbsolutePath(), "-DgroovyScripts=" + script });
 
         assertThat(exitCode).isEqualTo(10);
-        assertThat(projectDir.resolve("alignment-report.json")).doesNotExist();
+        assertThat(projectDir.resolve("discovery-report.json")).doesNotExist();
+        assertThat(projectDir.resolve("alignmentReport.json")).doesNotExist();
     }
 
     private static void write(Path p, String s) throws IOException {

@@ -26,6 +26,11 @@
       <artifactId>groovy</artifactId>
     </dependency>
     <dependency>
+      <!-- PME's shared JSON report POJOs, for the PME-format alignmentReport.json. -->
+      <groupId>org.jboss.pnc.maven-manipulator</groupId>
+      <artifactId>pom-manipulation-common-lite</artifactId>
+    </dependency>
+    <dependency>
       <!-- Apache Ant itself: we reuse its ProjectHelper to parse build files,
            just as pom-manipulation-ext reuses Maven's model reader for POMs. -->
       <groupId>org.apache.ant</groupId>
