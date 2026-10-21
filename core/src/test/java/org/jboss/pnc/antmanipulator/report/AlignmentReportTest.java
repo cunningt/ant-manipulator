@@ -1,9 +1,14 @@
 package org.jboss.pnc.antmanipulator.report;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.jboss.pnc.antmanipulator.gav.GavCorrelator;
 import org.jboss.pnc.antmanipulator.gav.ResolvedGav;
@@ -55,5 +60,28 @@ class AlignmentReportTest {
                 .toJson();
 
         assertThat(json).contains("\"detail\": \"line with \\\"quotes\\\", a\\\\backslash and a\\ttab\"");
+    }
+
+    @Test
+    void acceptsTheSupportedValueTypes() {
+        Map<String, Object> tree = new LinkedHashMap<>();
+        tree.put("str", "x");
+        tree.put("num", 1);
+        tree.put("bool", true);
+        tree.put("nil", null);
+        tree.put("list", Arrays.asList("a", 2, false, null));
+        tree.put("nested", Collections.singletonMap("k", Collections.singletonList("v")));
+
+        assertThatCode(() -> AlignmentReport.assertSupported(tree)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void rejectsAnUnsupportedValueTypeNestedInTheTree() {
+        Map<String, Object> tree = new LinkedHashMap<>();
+        tree.put("findings", Collections.singletonList(Collections.singletonMap("bad", new Object())));
+
+        assertThatThrownBy(() -> AlignmentReport.assertSupported(tree))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported JSON value type");
     }
 }

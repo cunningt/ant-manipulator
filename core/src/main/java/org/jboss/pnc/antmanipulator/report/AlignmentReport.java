@@ -169,10 +169,29 @@ public final class AlignmentReport {
     }
 
     public String toJson() {
+        // The report tree is only ever maps/lists/strings/numbers/booleans/nulls. Reject anything else up front
+        // rather than let Jackson reflect an unexpected object into garbage JSON — fail-fast on a schema bug, as
+        // the previous hand-rolled serialiser did.
+        assertSupported(root);
         try {
             return MAPPER.writer(PRETTY_PRINTER).writeValueAsString(root) + "\n";
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize alignment report", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    static void assertSupported(Object value) {
+        if (value == null || value instanceof String || value instanceof Boolean || value instanceof Number) {
+            return;
+        }
+        if (value instanceof Map) {
+            ((Map<String, Object>) value).values().forEach(AlignmentReport::assertSupported);
+        } else if (value instanceof List) {
+            ((List<Object>) value).forEach(AlignmentReport::assertSupported);
+        } else {
+            throw new IllegalArgumentException(
+                    "Unsupported JSON value type: " + value.getClass().getName());
         }
     }
 

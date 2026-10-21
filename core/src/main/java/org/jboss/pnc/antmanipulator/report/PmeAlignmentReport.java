@@ -1,8 +1,9 @@
 package org.jboss.pnc.antmanipulator.report;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -18,6 +19,8 @@ import org.jboss.pnc.antmanipulator.gav.VersionReconciler;
 import org.jboss.pnc.mavenmanipulator.common.json.ModulesItem;
 import org.jboss.pnc.mavenmanipulator.common.json.PME;
 import org.jboss.pnc.mavenmanipulator.common.util.JSONUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Builds {@code alignmentReport.json} in PME's own JSON shape — the {@code org.jboss.pnc.mavenmanipulator.common.json}
@@ -32,6 +35,8 @@ import org.jboss.pnc.mavenmanipulator.common.util.JSONUtils;
  * none is declared there.
  */
 public final class PmeAlignmentReport {
+
+    private static final Logger logger = LoggerFactory.getLogger(PmeAlignmentReport.class);
 
     private PmeAlignmentReport() {
     }
@@ -85,9 +90,9 @@ public final class PmeAlignmentReport {
 
     /** Write {@code report} to {@code file} using PME's own serialisation (pretty-printed, nulls/empties omitted). */
     public static File writeTo(PME report, File file) throws IOException {
-        try (FileWriter writer = new FileWriter(file)) {
-            writer.write(JSONUtils.jsonToString(report));
-        }
+        // UTF-8 explicitly (not JVM default charset) so non-ASCII coordinates serialise to the same bytes on
+        // every platform, matching the discovery report and keeping the output parseable by PNC/Repour.
+        Files.write(file.toPath(), JSONUtils.jsonToString(report).getBytes(StandardCharsets.UTF_8));
         return file;
     }
 
@@ -156,6 +161,9 @@ public final class PmeAlignmentReport {
         try {
             return f.getCanonicalFile();
         } catch (IOException e) {
+            // Falling back to the absolute (non-canonicalised) path may make isDeclaredIn() miss the root
+            // build file and so pick a different executionRoot, so leave a trace of why.
+            logger.debug("Could not canonicalise {}; falling back to absolute path: {}", f, e.getMessage());
             return f.getAbsoluteFile();
         }
     }
