@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jboss</groupId>
     <artifactId>jboss-parent</artifactId>
-    <version>54</version>
+    <version>55</version>
   </parent>
 
   <groupId>org.jboss.pnc.ant-manipulator</groupId>
@@ -81,9 +81,6 @@
     <ide-config.version>1.1.0</ide-config.version>
     <shade.version>3.6.2</shade.version>
     <failsafe.version>3.6.0</failsafe.version>
-
-    <!-- jboss parent override to fix release workflow failure, TODO: remove -->
-    <version.central-publishing.plugin>0.12.0</version.central-publishing.plugin>
   </properties>
 
   <dependencyManagement>
