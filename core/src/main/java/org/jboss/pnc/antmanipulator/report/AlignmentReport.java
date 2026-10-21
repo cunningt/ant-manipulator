@@ -17,17 +17,44 @@ import org.jboss.pnc.antmanipulator.gav.GavCorrelator;
 import org.jboss.pnc.antmanipulator.gav.ResolvedGav;
 import org.jboss.pnc.antmanipulator.gav.VersionReconciler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.core.util.Separators;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
- * Builds the machine-readable alignment report — the analogue of PME's {@code alignmentReport.json}.
+ * Builds our own richer, pre-alignment discovery report — written to {@code discoveryReportJSONOutputFile}.
+ * No PME/GME equivalent (see {@link PmeAlignmentReport} for the PME-shaped {@code alignmentReport.json}
+ * PNC/Repour consume).
  *
  * <p>
- * PME's report describes what its manipulators <em>changed</em>; we haven't applied any changes yet,
- * so ours is a <b>discovery/analysis</b> report: every coordinate we found, with provenance, conflict
- * flags, and — crucially for Ant — the {@link VersionReconciler reconciliation} of each tokenised
- * version to its concrete value(s). This is exactly the input a later alignment step would annotate
- * with before→after edits.
+ * This is a <b>discovery/analysis</b> report, produced before any changes are applied: every coordinate we
+ * found, with provenance, conflict flags, and — crucially for Ant — the {@link VersionReconciler
+ * reconciliation} of each tokenised version to its concrete value(s). This is exactly the input a later
+ * alignment step would annotate with before→after edits.
  */
 public final class AlignmentReport {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    /**
+     * Matches the report's historical hand-rolled format: 2-space indent, {@code "key": value} (no space before the
+     * colon).
+     */
+    private static final DefaultPrettyPrinter PRETTY_PRINTER;
+
+    static {
+        DefaultIndenter indenter = new DefaultIndenter("  ", "\n");
+        Separators separators = Separators.createDefaultInstance()
+                .withObjectFieldValueSpacing(Separators.Spacing.AFTER)
+                .withObjectEmptySeparator("")
+                .withArrayEmptySeparator("");
+        PRETTY_PRINTER = new DefaultPrettyPrinter()
+                .withObjectIndenter(indenter)
+                .withArrayIndenter(indenter)
+                .withSeparators(separators);
+    }
 
     private final Map<String, Object> root;
 
@@ -142,7 +169,11 @@ public final class AlignmentReport {
     }
 
     public String toJson() {
-        return Json.write(root);
+        try {
+            return MAPPER.writer(PRETTY_PRINTER).writeValueAsString(root) + "\n";
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize alignment report", e);
+        }
     }
 
     /** Write the JSON report to {@code file}, returning the file for convenience. */

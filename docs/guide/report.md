@@ -223,7 +223,7 @@ values. The result is captured in a reconciliation object:
 
 The PME-shaped report is produced by `PmeAlignmentReport` in the `core` module, and serialised with
 PME's own `JSONUtils`/`PME` POJOs from `pom-manipulation-common-lite`. The discovery report is
-produced by `AlignmentReport` and serialised by `Json`, both in
-`org.jboss.pnc.antmanipulator.report`. If you need to consume either report programmatically rather
-than parsing the JSON directly, use the respective `build(...)` factory method after running the
-pipeline stages manually.
+produced by `AlignmentReport`, also in `org.jboss.pnc.antmanipulator.report`, and serialised with a
+plain Jackson `ObjectMapper`. If you need to consume either report programmatically rather than
+parsing the JSON directly, use the respective `build(...)` factory method after running the pipeline
+stages manually.
