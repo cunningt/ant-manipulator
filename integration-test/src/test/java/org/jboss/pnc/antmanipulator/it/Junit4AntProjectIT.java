@@ -63,7 +63,7 @@ class Junit4AntProjectIT {
 
         assertThat(exitCode).isEqualTo(0);
 
-        String report = readFile(projectDir.resolve("alignment-report.json").toFile());
+        String report = readFile(projectDir.resolve("discovery-report.json").toFile());
 
         // No groupId/artifactId anywhere in the tree, so no artifact is correlated...
         assertThat(report).contains("\"artifacts\": 0").contains("\"artifacts\": []");
@@ -107,7 +107,7 @@ class Junit4AntProjectIT {
 
         assertThat(exitCode).isEqualTo(0);
 
-        String report = readFile(projectDir.resolve("alignment-report.json").toFile());
+        String report = readFile(projectDir.resolve("discovery-report.json").toFile());
         // The injected coordinate picks up its version from the root build file's own `version`
         // property - no -Dalignment.version needed - and resolves it straight away: the build defines
         // version-base/version-status as plain literals, so Ant's own property engine already collapses

@@ -118,6 +118,13 @@
         </exclusions>
       </dependency>
       <dependency>
+        <!-- PME's shared JSON report POJOs (PME/GAV/ModulesItem/...), reused verbatim so our
+             alignmentReport.json is byte-for-byte compatible with PME's and GME's. -->
+        <groupId>org.jboss.pnc.maven-manipulator</groupId>
+        <artifactId>pom-manipulation-common-lite</artifactId>
+        <version>${pme.version}</version>
+      </dependency>
+      <dependency>
         <groupId>info.picocli</groupId>
         <artifactId>picocli</artifactId>
         <version>${picocli.version}</version>

@@ -22,6 +22,8 @@ import org.jboss.pnc.antmanipulator.gav.VersionRewriter;
 import org.jboss.pnc.antmanipulator.groovy.GroovyScriptRunner;
 import org.jboss.pnc.antmanipulator.groovy.InvocationStage;
 import org.jboss.pnc.antmanipulator.report.AlignmentReport;
+import org.jboss.pnc.antmanipulator.report.PmeAlignmentReport;
+import org.jboss.pnc.mavenmanipulator.common.json.PME;
 import org.jboss.pnc.mavenmanipulator.io.rest.DefaultTranslator;
 import org.jboss.pnc.mavenmanipulator.io.rest.RestException;
 import org.jboss.pnc.mavenmanipulator.io.rest.Translator;
@@ -64,7 +66,12 @@ public class Cli implements Callable<Integer> {
     static final String PROP_REST_RETRY_DURATION = "restRetryDuration";
     static final String PROP_VERSION_INCREMENTAL_SUFFIX = "versionIncrementalSuffix";
     static final String PROP_VERSION_INCREMENTAL_SUFFIX_PADDING = "versionIncrementalSuffixPadding";
+    /** PME's property, now governing the PME-shaped {@code alignmentReport.json} (see {@link PmeAlignmentReport}). */
     static final String PROP_REPORT_JSON = "reportJSONOutputFile";
+    /** PME's property: write {@code reportJSONOutputFile} even when nothing was realigned. */
+    static final String PROP_REPORT_JSON_UNCHANGED = "reportJsonUnchanged";
+    /** antalignment-specific (no PME equivalent): our own richer, pre-alignment discovery report. */
+    static final String PROP_DISCOVERY_REPORT_JSON = "discoveryReportJSONOutputFile";
     /** antalignment-specific (no PME equivalent): dev markers stripped like {@code -SNAPSHOT}. */
     static final String PROP_VERSION_SUFFIX_STRIP = "versionSuffixStrip";
 
@@ -251,14 +258,14 @@ public class Cli implements Callable<Integer> {
                 }
             }
 
-            // Step 5 (PME's alignmentReport.json analogue): write a machine-readable report of every
-            // coordinate, its provenance, conflicts, and reconciliation.
-            String reportPath = properties.getProperty(PROP_REPORT_JSON);
-            File out = reportPath != null && !reportPath.trim().isEmpty()
-                    ? new File(reportPath.trim())
-                    : new File(buildFile.getParentFile(), "alignment-report.json");
-            AlignmentReport.build(buildFile, gavs, correlated, reconciler).writeTo(out);
-            logger.info("Wrote alignment report to {}", out.getAbsolutePath());
+            // Step 5: write our own richer, pre-alignment discovery report (every coordinate, its
+            // provenance, conflicts, and reconciliation) — no PME/GME equivalent, so its own flag.
+            String discoveryReportPath = properties.getProperty(PROP_DISCOVERY_REPORT_JSON);
+            File discoveryOut = discoveryReportPath != null && !discoveryReportPath.trim().isEmpty()
+                    ? new File(discoveryReportPath.trim())
+                    : new File(buildFile.getParentFile(), "discovery-report.json");
+            AlignmentReport.build(buildFile, gavs, correlated, reconciler).writeTo(discoveryOut);
+            logger.info("Wrote discovery report to {}", discoveryOut.getAbsolutePath());
 
             // Step 6 (PME's Translator/DA round-trip + VersionCalculator): the discovered coordinates are
             // the project's OWN publishing coordinates, so aligning them means computing the version to
@@ -316,6 +323,21 @@ public class Cli implements Callable<Integer> {
                     // the build files at their definition sites. Applies in place by default; --preview skips.
                     rewriteVersions(buildFile.getParentFile(), versionRewrites, reconciler);
                 }
+            }
+
+            // Step 8 (PME's alignmentReport.json analogue): write a diff-shaped report of the GAV changes
+            // actually computed above, in PME's own JSON shape, so PNC/Repour can consume Ant Manipulator's
+            // output exactly like PME's and GME's.
+            boolean reportJsonUnchanged = Boolean
+                    .parseBoolean(properties.getProperty(PROP_REPORT_JSON_UNCHANGED, "false"));
+            PME pmeReport = PmeAlignmentReport.build(buildFile, correlated, reconciler, versionRewrites);
+            if (!pmeReport.getModules().isEmpty() || reportJsonUnchanged) {
+                String reportPath = properties.getProperty(PROP_REPORT_JSON);
+                File out = reportPath != null && !reportPath.trim().isEmpty()
+                        ? new File(reportPath.trim())
+                        : new File(buildFile.getParentFile(), "alignmentReport.json");
+                PmeAlignmentReport.writeTo(pmeReport, out);
+                logger.info("Wrote alignment report to {}", out.getAbsolutePath());
             }
 
             // LAST-stage Groovy scripts see the final computed versions (and the rewritten files).

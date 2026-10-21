@@ -73,7 +73,9 @@ REST/DA and version keys match PME/GME verbatim; `restURL` enables alignment whe
 | `versionIncrementalSuffix` | Rebuild suffix inserted before the serial (`1.2.3.<suffix>-00001`) | `redhat` |
 | `versionIncrementalSuffixPadding` | Zero-padding width of the rebuild serial | `5` |
 | `versionSuffixStrip` | Dev markers stripped like `-SNAPSHOT` before the suffix is applied (comma-separated). Opt-in; no PME equivalent. | _(none)_ |
-| `reportJSONOutputFile` | JSON report output path | `alignment-report.json` beside the build file |
+| `reportJSONOutputFile` | PME-shaped `alignmentReport.json` output path (what PNC/Repour consume) | `alignmentReport.json` beside the build file |
+| `reportJsonUnchanged` | Write `reportJSONOutputFile` even when nothing was realigned | `false` |
+| `discoveryReportJSONOutputFile` | Our own richer pre-alignment discovery report output path (no PME/GME equivalent) | `discovery-report.json` beside the build file |
 | `alignment.groupId` | Inject a group ID the project never declares | — |
 | `alignment.artifactId` | Inject an artifact ID the project never declares | — |
 | `alignment.version` | Inject a version the project never declares | — |
@@ -91,7 +93,8 @@ For a complete alphabetical index of all properties, see
 - [Version Manipulation](guide/version-manip.html) — version suffix, padding, SNAPSHOT handling,
   `versionSuffixStrip`
 - [DA REST Integration](guide/rest-da.html) — `restURL`, `restMode`, authentication, timeouts
-- [Alignment Report](guide/report.html) — JSON report structure, `reportJSONOutputFile`
+- [Alignment Report](guide/report.html) — both JSON reports, `reportJSONOutputFile` and
+  `discoveryReportJSONOutputFile`
 - [Groovy Scripts](guide/groovy.html) — edge-case scripting with `groovyScripts`
 - [Index of Properties](guide/property-index.html) — alphabetical `-D` property reference
 

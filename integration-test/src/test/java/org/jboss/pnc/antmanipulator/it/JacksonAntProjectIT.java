@@ -77,7 +77,7 @@ class JacksonAntProjectIT {
 
         assertThat(exitCode).isEqualTo(0);
 
-        File reportFile = projectDir.resolve("alignment-report.json").toFile();
+        File reportFile = projectDir.resolve("discovery-report.json").toFile();
         assertThat(reportFile).exists();
         String report = readFile(reportFile);
 
@@ -138,6 +138,20 @@ class JacksonAntProjectIT {
         for (String artifactId : ARTIFACT_IDS) {
             File pom = projectDir.resolve("src/maven/" + artifactId + ".pom").toFile();
             assertThat(readFile(pom)).contains("<version>@VERSION@</version>");
+        }
+
+        // The PME-shaped alignmentReport.json (what PNC/Repour consume) carries every artifact even
+        // though its @VERSION@ token resolved ambiguously to both "1.9.11" and "1.9.11-SNAPSHOT": both
+        // candidates were realigned to the very same new version, so the diff is still unambiguous.
+        String pmeReport = readFile(projectDir.resolve("alignmentReport.json").toFile());
+        assertThat(pmeReport).contains("\"executionRoot\"").contains("\"modules\"");
+        for (String artifactId : ARTIFACT_IDS) {
+            assertThat(pmeReport)
+                    .contains(
+                            "\"originalGAV\" : \"org.codehaus.jackson:" + artifactId + ":1.9.11\"")
+                    .contains("\"groupId\" : \"org.codehaus.jackson\"")
+                    .contains("\"artifactId\" : \"" + artifactId + "\"")
+                    .contains("\"version\" : \"1.9.11.redhat-00001\"");
         }
     }
 

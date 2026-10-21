@@ -27,9 +27,12 @@ The stages mirror PME's `ManipulationManager` flow:
 3. **Correlation** — group findings by `groupId:artifactId`, flag version conflicts.
 4. **Reconciliation** — resolve tokenised versions (`${...}`, `@TOKEN@`) to concrete values by
    following Ant's substitution chains.
-5. **Report** — emit an `alignment-report.json` (PME's `alignmentReport.json` analogue).
+5. **Discovery report** — emit a `discovery-report.json` of every coordinate candidate found, with
+   provenance, conflicts, and reconciliation (no PME/GME equivalent).
 6. **Align** — POST coordinates to a DA lookup service and compute each project's publish version.
 7. **Rewrite** — write the aligned versions back into the build files (formatting-preserving).
+8. **Alignment report** — emit an `alignmentReport.json` in PME's own JSON shape, so PNC/Repour
+   consume Ant Manipulator's GAV changes exactly like PME's and GME's.
 
 ## Module layout
 
